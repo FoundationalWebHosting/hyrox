@@ -1,118 +1,92 @@
 import { useState } from "react";
 import ShortsVisualization from "./components/ShortsVisualization";
-import BidModal from "./components/BidModal";
-import CurrentBids from "./components/CurrentBids";
+import ReservationModal from "./components/ReservationModal";
+import ZoneStatus from "./components/ZoneStatus";
 import Hero from "./components/Hero";
-import { Bid, AdZone } from "./types";
+import { Sponsorship, AdZone } from "./types";
 
-const initialBids: Bid[] = [
-  {
-    id: "1",
-    companyName: "NutriFuel Co.",
-    contactEmail: "sponsor@nutrifuel.com",
-    zone: "front-left",
-    amount: 2500,
-    timestamp: new Date("2026-01-15"),
-    status: "active",
-  },
-  {
-    id: "2",
-    companyName: "Peak Performance",
-    contactEmail: "ads@peakperf.com",
-    zone: "front-right",
-    amount: 3200,
-    timestamp: new Date("2026-01-18"),
-    status: "active",
-  },
-  {
-    id: "3",
-    companyName: "RecoveryPlus",
-    contactEmail: "marketing@recoveryplus.com",
-    zone: "rear-left",
-    amount: 1800,
-    timestamp: new Date("2026-01-20"),
-    status: "active",
-  },
-  {
-    id: "4",
-    companyName: "HydraMax",
-    contactEmail: "deals@hydramax.com",
-    zone: "rear-right",
-    amount: 2100,
-    timestamp: new Date("2026-01-22"),
-    status: "active",
-  },
-];
+const PRICE_PER_ZONE = 5000;
 
 const adZones: AdZone[] = [
   {
     id: "front-left",
     name: "Front Left Leg",
-    description: "High visibility during running stride. Prime real estate for brand exposure.",
-    minBid: 1500,
-    dimensions: "8cm × 12cm",
+    description: "High visibility during running stride. Prime real estate for brand exposure on every step.",
+    price: PRICE_PER_ZONE,
+    dimensions: "Bounding Box",
     view: "front",
   },
   {
     id: "front-right",
     name: "Front Right Leg",
-    description: "Complementary placement to front left. Maximum frontal brand presence.",
-    minBid: 1500,
-    dimensions: "8cm × 12cm",
+    description: "Complementary placement to front left. Maximum frontal brand presence for spectators.",
+    price: PRICE_PER_ZONE,
+    dimensions: "Bounding Box",
     view: "front",
   },
   {
     id: "rear-left",
     name: "Rear Left Leg",
     description: "Visible to followers during the race. Great for memorable brand impressions.",
-    minBid: 1200,
-    dimensions: "8cm × 12cm",
+    price: PRICE_PER_ZONE,
+    dimensions: "Bounding Box",
     view: "rear",
   },
   {
     id: "rear-right",
     name: "Rear Right Leg",
     description: "Complete rear coverage when paired with rear left. Full 360° brand visibility.",
-    minBid: 1200,
-    dimensions: "8cm × 12cm",
+    price: PRICE_PER_ZONE,
+    dimensions: "Bounding Box",
     view: "rear",
   },
 ];
 
 export default function App() {
-  const [bids, setBids] = useState<Bid[]>(initialBids);
+  const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [selectedZone, setSelectedZone] = useState<AdZone | null>(null);
-  const [showBidModal, setShowBidModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState<"front" | "rear">("front");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleZoneClick = (zoneId: string) => {
     const zone = adZones.find((z) => z.id === zoneId);
     if (zone) {
+      const isReserved = sponsorships.some((s) => s.zone === zoneId && s.status === "reserved");
+      if (isReserved) return;
       setSelectedZone(zone);
-      setShowBidModal(true);
+      setShowModal(true);
     }
   };
 
-  const handleBidSubmit = (bid: Omit<Bid, "id" | "timestamp" | "status">) => {
-    const newBid: Bid = {
-      ...bid,
+  const handleReservation = (data: Omit<Sponsorship, "id" | "timestamp" | "status" | "amount">) => {
+    const newSponsorship: Sponsorship = {
+      ...data,
       id: Date.now().toString(),
+      amount: PRICE_PER_ZONE,
       timestamp: new Date(),
-      status: "active",
+      status: "reserved",
     };
-    setBids([...bids, newBid]);
-    setShowBidModal(false);
+    setSponsorships([...sponsorships, newSponsorship]);
+    setShowModal(false);
     setSelectedZone(null);
+    setSuccessMessage(`${data.companyName} has reserved the ${adZones.find(z => z.id === data.zone)?.name}!`);
+    setTimeout(() => setSuccessMessage(""), 5000);
   };
 
-  const getHighestBid = (zoneId: string): Bid | undefined => {
-    const zoneBids = bids.filter((b) => b.zone === zoneId && b.status === "active");
-    return zoneBids.sort((a, b) => b.amount - a.amount)[0];
+  const isZoneReserved = (zoneId: string): boolean => {
+    return sponsorships.some((s) => s.zone === zoneId && s.status === "reserved");
   };
 
-  const getBidCount = (zoneId: string): number => {
-    return bids.filter((b) => b.zone === zoneId && b.status === "active").length;
+  const getReservedZones = () => {
+    return adZones.map((zone) => ({
+      zone,
+      sponsorship: sponsorships.find((s) => s.zone === zone.id && s.status === "reserved"),
+    }));
   };
+
+  const totalRevenue = sponsorships.filter(s => s.status === "reserved").reduce((sum, s) => sum + s.amount, 0);
+  const reservedCount = sponsorships.filter(s => s.status === "reserved").length;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -124,23 +98,33 @@ export default function App() {
               <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center font-black text-sm">
                 H
               </div>
-              <span className="font-bold text-white">HYROX Auction</span>
+              <div className="hidden sm:block">
+                <span className="font-bold text-white text-sm">Centr HYROX Anaheim</span>
+                <span className="text-gray-500 text-xs block leading-none">Season 26/27</span>
+              </div>
             </div>
-            <div className="hidden sm:flex items-center gap-6">
-              <a href="#zones" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <a href="#zones" className="text-gray-400 hover:text-white text-sm transition-colors hidden sm:block">
                 Ad Zones
               </a>
-              <a href="#how-it-works" className="text-gray-400 hover:text-white text-sm transition-colors">
+              <a href="#how-it-works" className="text-gray-400 hover:text-white text-sm transition-colors hidden sm:block">
                 How It Works
               </a>
+              <div className="text-right hidden md:block">
+                <span className="text-xs text-gray-500">Reserved</span>
+                <span className="text-orange-400 font-bold ml-1">{reservedCount}/4</span>
+              </div>
               <button
                 onClick={() => {
-                  setSelectedZone(adZones[0]);
-                  setShowBidModal(true);
+                  const availableZone = adZones.find(z => !isZoneReserved(z.id));
+                  if (availableZone) {
+                    setSelectedZone(availableZone);
+                    setShowModal(true);
+                  }
                 }}
                 className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold px-4 py-2 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
               >
-                Place Bid
+                Reserve Now
               </button>
             </div>
           </div>
@@ -150,6 +134,16 @@ export default function App() {
       {/* Spacer for fixed nav */}
       <div className="h-16" />
 
+      {/* Success Toast */}
+      {successMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-green-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-lg shadow-green-500/25 animate-bounce">
+          <div className="flex items-center gap-2">
+            <span>✓</span>
+            <span className="font-medium">{successMessage}</span>
+          </div>
+        </div>
+      )}
+
       <Hero />
 
       {/* Main Content */}
@@ -158,13 +152,22 @@ export default function App() {
         <div id="zones" className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
-              Ad Placement Zones
+              Sponsorship Ad Zones
             </span>
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            Click on any highlighted zone on the shorts to view details and place your bid.
-            Each zone offers unique visibility during the race.
+            Secure your brand's placement on the competition shorts worn by Jacob Gonzales
+            at the Centr HYROX Anaheim. Each bounding box is <span className="text-white font-semibold">$5,000</span>.
           </p>
+
+          {/* Pricing callout */}
+          <div className="mt-6 inline-flex items-center gap-3 bg-gray-900 border border-orange-500/30 rounded-2xl px-6 py-4">
+            <div className="text-3xl font-black text-orange-400">$5,000</div>
+            <div className="text-left">
+              <div className="text-sm text-white font-medium">per bounding box placement</div>
+              <div className="text-xs text-gray-400">Front & rear, left & right legs</div>
+            </div>
+          </div>
         </div>
 
         {/* View Toggle */}
@@ -199,9 +202,8 @@ export default function App() {
             <ShortsVisualization
               viewMode={viewMode}
               onZoneClick={handleZoneClick}
-              bids={bids}
-              getHighestBid={getHighestBid}
-              getBidCount={getBidCount}
+              isZoneReserved={isZoneReserved}
+              sponsorships={sponsorships}
             />
           </div>
 
@@ -215,37 +217,46 @@ export default function App() {
                 {adZones
                   .filter((z) => z.view === viewMode)
                   .map((zone) => {
-                    const highestBid = getHighestBid(zone.id);
-                    const bidCount = getBidCount(zone.id);
+                    const reserved = isZoneReserved(zone.id);
+                    const sponsorship = sponsorships.find(s => s.zone === zone.id && s.status === "reserved");
                     return (
                       <div
                         key={zone.id}
-                        className="bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-orange-500/50 transition-all cursor-pointer"
-                        onClick={() => {
-                          setSelectedZone(zone);
-                          setShowBidModal(true);
-                        }}
+                        className={`bg-gray-800 rounded-xl p-4 border transition-all ${
+                          reserved
+                            ? "border-green-500/30 opacity-75"
+                            : "border-gray-700 hover:border-orange-500/50 cursor-pointer"
+                        }`}
+                        onClick={() => !reserved && handleZoneClick(zone.id)}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-bold text-white">{zone.name}</h4>
-                          <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                            {zone.dimensions}
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            reserved
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-orange-500/20 text-orange-400"
+                          }`}>
+                            {reserved ? "Reserved" : "Available"}
                           </span>
                         </div>
                         <p className="text-gray-400 text-sm mb-3">{zone.description}</p>
                         <div className="flex justify-between items-center">
                           <div>
-                            <span className="text-xs text-gray-500">Current highest bid</span>
-                            <p className="text-lg font-bold text-green-400">
-                              ${highestBid ? highestBid.amount.toLocaleString() : "No bids yet"}
+                            <span className="text-xs text-gray-500">Price</span>
+                            <p className="text-lg font-bold text-white">
+                              ${zone.price.toLocaleString()}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <span className="text-xs text-gray-500">{bidCount} bid{bidCount !== 1 ? "s" : ""}</span>
-                            <button className="block mt-1 text-sm bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg transition-colors">
-                              Place Bid →
+                          {reserved && sponsorship ? (
+                            <div className="text-right">
+                              <span className="text-xs text-gray-500">Reserved by</span>
+                              <p className="text-sm font-medium text-green-400">{sponsorship.companyName}</p>
+                            </div>
+                          ) : (
+                            <button className="text-sm bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                              Reserve →
                             </button>
-                          </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -255,9 +266,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* Current Bids Section */}
+        {/* Zone Status Section */}
         <div className="mt-20">
-          <CurrentBids bids={bids} adZones={adZones} />
+          <ZoneStatus
+            zones={getReservedZones()}
+            totalRevenue={totalRevenue}
+            reservedCount={reservedCount}
+          />
         </div>
 
         {/* How It Works */}
@@ -271,20 +286,20 @@ export default function App() {
             {[
               {
                 step: "01",
-                title: "Explore Zones",
-                desc: "Review the four ad placement zones on our race shorts. Each offers unique visibility during the Hyrox event.",
+                title: "Choose Your Zone",
+                desc: "Select from 4 premium bounding box placements on the competition shorts — front left, front right, rear left, or rear right leg.",
                 icon: "👁️",
               },
               {
                 step: "02",
-                title: "Place Your Bid",
-                desc: "Submit your company's bid for any zone. Bids are competitive — outbid competitors to secure your placement.",
+                title: "Reserve & Pay",
+                desc: "Each placement is $5,000 flat rate. Submit your company details and secure your zone instantly. First come, first served.",
                 icon: "💰",
               },
               {
                 step: "03",
                 title: "Get Brand Exposure",
-                desc: "Winning bidders get their logo printed on the shorts worn during the race and seen by thousands of spectators.",
+                desc: "Your logo printed on the shorts worn by Jacob Gonzales during the Centr HYROX Anaheim race — seen by thousands live and online.",
                 icon: "🏆",
               },
             ].map((item) => (
@@ -305,25 +320,25 @@ export default function App() {
         <div className="mt-20 bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4 text-orange-400">Race Details</h3>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">Event Details</h3>
               <div className="space-y-3 text-gray-300">
-                <p><span className="text-gray-500">Event:</span> HYROX Race 2026</p>
-                <p><span className="text-gray-500">Date:</span> March 15, 2026</p>
-                <p><span className="text-gray-500">Location:</span> National Convention Center</p>
-                <p><span className="text-gray-500">Expected Athletes:</span> 3,000+</p>
-                <p><span className="text-gray-500">Spectators:</span> 10,000+</p>
-                <p><span className="text-gray-500">Media Coverage:</span> Live stream + social media</p>
+                <p><span className="text-gray-500">Event:</span> Centr HYROX Anaheim</p>
+                <p><span className="text-gray-500">Season:</span> 26/27</p>
+                <p><span className="text-gray-500">Date:</span> December 3, 2026</p>
+                <p><span className="text-gray-500">Venue:</span> Anaheim Convention Center</p>
+                <p><span className="text-gray-500">Division:</span> HYROX Doubles Men</p>
+                <p><span className="text-gray-500">Day:</span> Thursday</p>
               </div>
             </div>
             <div>
-              <h3 className="text-2xl font-bold mb-4 text-orange-400">Auction Details</h3>
+              <h3 className="text-2xl font-bold mb-4 text-orange-400">Sponsorship Details</h3>
               <div className="space-y-3 text-gray-300">
-                <p><span className="text-gray-500">Bidding Opens:</span> January 1, 2026</p>
-                <p><span className="text-gray-500">Bidding Closes:</span> February 28, 2026</p>
-                <p><span className="text-gray-500">Winners Announced:</span> March 1, 2026</p>
-                <p><span className="text-gray-500">Logo Submission Deadline:</span> March 5, 2026</p>
-                <p><span className="text-gray-500">Format:</span> Printed logo on shorts legs</p>
-                <p><span className="text-gray-500">Size:</span> 8cm × 12cm per zone</p>
+                <p><span className="text-gray-500">Participant:</span> Jacob Gonzales</p>
+                <p><span className="text-gray-500">Price:</span> $5,000 per placement</p>
+                <p><span className="text-gray-500">Total Zones:</span> 4 (front & rear, left & right)</p>
+                <p><span className="text-gray-500">Total Inventory Value:</span> $20,000</p>
+                <p><span className="text-gray-500">Format:</span> Logo in bounding box on shorts legs</p>
+                <p><span className="text-gray-500">Availability:</span> First come, first served</p>
               </div>
             </div>
           </div>
@@ -333,19 +348,18 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-gray-800 mt-20 py-8">
         <div className="max-w-7xl mx-auto px-4 text-center text-gray-500">
-          <p>© 2026 HYROX Race Shorts Ad Auction. All rights reserved.</p>
-          <p className="mt-2 text-sm">For questions, contact: sponsor@hyroxrace.com</p>
+          <p>© 2026 Centr HYROX Anaheim — Season 26/27. Ad Placement Sponsorship.</p>
+          <p className="mt-2 text-sm">Participant: Jacob Gonzales | HYROX Doubles Men | December 3, 2026</p>
         </div>
       </footer>
 
-      {/* Bid Modal */}
-      {showBidModal && selectedZone && (
-        <BidModal
+      {/* Reservation Modal */}
+      {showModal && selectedZone && (
+        <ReservationModal
           zone={selectedZone}
-          highestBid={getHighestBid(selectedZone.id)}
-          onSubmit={handleBidSubmit}
+          onSubmit={handleReservation}
           onClose={() => {
-            setShowBidModal(false);
+            setShowModal(false);
             setSelectedZone(null);
           }}
         />

@@ -1,37 +1,51 @@
-import { Bid } from "../types";
+import { Sponsorship } from "../types";
 
 interface Props {
   viewMode: "front" | "rear";
   onZoneClick: (zoneId: string) => void;
-  bids: Bid[];
-  getHighestBid: (zoneId: string) => Bid | undefined;
-  getBidCount: (zoneId: string) => number;
+  isZoneReserved: (zoneId: string) => boolean;
+  sponsorships: Sponsorship[];
 }
 
 export default function ShortsVisualization({
   viewMode,
   onZoneClick,
-  getHighestBid,
-  getBidCount,
+  isZoneReserved,
+  sponsorships,
 }: Props) {
-  const getZoneColor = (zoneId: string) => {
-    const highestBid = getHighestBid(zoneId);
-    const bidCount = getBidCount(zoneId);
-    if (bidCount === 0) return { fill: "rgba(249,115,22,0.15)", stroke: "#f97316", label: "Open" };
-    if (bidCount >= 3) return { fill: "rgba(239,68,68,0.25)", stroke: "#ef4444", label: "Hot" };
-    return { fill: "rgba(34,197,94,0.2)", stroke: "#22c55e", label: "$" + (highestBid?.amount || 0).toLocaleString() };
-  };
-
   const leftZone = viewMode === "front" ? "front-left" : "rear-left";
   const rightZone = viewMode === "front" ? "front-right" : "rear-right";
-  const leftColor = getZoneColor(leftZone);
-  const rightColor = getZoneColor(rightZone);
+  const leftReserved = isZoneReserved(leftZone);
+  const rightReserved = isZoneReserved(rightZone);
+
+  const leftSponsorship = sponsorships.find(s => s.zone === leftZone && s.status === "reserved");
+  const rightSponsorship = sponsorships.find(s => s.zone === rightZone && s.status === "reserved");
+
+  const getZoneStyles = (reserved: boolean) => {
+    if (reserved) {
+      return {
+        fill: "rgba(34,197,94,0.15)",
+        stroke: "#22c55e",
+        statusText: "RESERVED",
+        statusColor: "#22c55e",
+      };
+    }
+    return {
+      fill: "rgba(249,115,22,0.15)",
+      stroke: "#f97316",
+      statusText: "$5,000",
+      statusColor: "#f97316",
+    };
+  };
+
+  const leftStyles = getZoneStyles(leftReserved);
+  const rightStyles = getZoneStyles(rightReserved);
 
   return (
     <div className="relative">
       {/* Glow effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 to-transparent rounded-3xl blur-xl" />
-      
+
       <div className="relative bg-gray-900 border border-gray-800 rounded-3xl p-8">
         {/* View label */}
         <div className="text-center mb-4">
@@ -45,7 +59,7 @@ export default function ShortsVisualization({
           className="w-full max-w-sm mx-auto"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Shorts body - main shape */}
+          {/* Shorts body */}
           <defs>
             <linearGradient id="shortsGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#1f2937" />
@@ -71,8 +85,8 @@ export default function ShortsVisualization({
             stroke="#4b5563"
             strokeWidth="1"
           />
-          
-          {/* Waistband detail lines */}
+
+          {/* Waistband detail */}
           <path
             d="M 110 90 Q 200 78 290 90"
             fill="none"
@@ -107,8 +121,8 @@ export default function ShortsVisualization({
 
           {/* Left leg ad zone */}
           <g
-            className="cursor-pointer hover:opacity-100 transition-opacity"
-            onClick={() => onZoneClick(leftZone)}
+            className={`${leftReserved ? "" : "cursor-pointer"} hover:opacity-100 transition-opacity`}
+            onClick={() => !leftReserved && onZoneClick(leftZone)}
           >
             <rect
               x="95"
@@ -116,19 +130,18 @@ export default function ShortsVisualization({
               width="85"
               height="120"
               rx="8"
-              fill={leftColor.fill}
-              stroke={leftColor.stroke}
+              fill={leftStyles.fill}
+              stroke={leftStyles.stroke}
               strokeWidth="2"
-              strokeDasharray="6,3"
+              strokeDasharray={leftReserved ? "none" : "6,3"}
               filter="url(#glow)"
-              className="animate-pulse"
             />
             {/* Zone label */}
             <text
               x="137"
-              y="280"
+              y="270"
               textAnchor="middle"
-              fill={leftColor.stroke}
+              fill={leftStyles.statusColor}
               fontSize="11"
               fontWeight="bold"
             >
@@ -136,35 +149,69 @@ export default function ShortsVisualization({
             </text>
             <text
               x="137"
-              y="298"
+              y="288"
               textAnchor="middle"
-              fill={leftColor.stroke}
+              fill={leftStyles.statusColor}
               fontSize="11"
               fontWeight="bold"
             >
               LEFT
             </text>
-            <text
-              x="137"
-              y="320"
-              textAnchor="middle"
-              fill="white"
-              fontSize="10"
-              opacity="0.7"
-            >
-              {leftColor.label}
-            </text>
-            {/* Click indicator */}
-            <circle cx="137" cy="340" r="8" fill={leftColor.stroke} opacity="0.5" />
-            <text x="137" y="344" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
-              +
-            </text>
+
+            {leftReserved && leftSponsorship ? (
+              <>
+                <text
+                  x="137"
+                  y="315"
+                  textAnchor="middle"
+                  fill="white"
+                  fontSize="9"
+                  fontWeight="bold"
+                >
+                  {leftSponsorship.companyName.length > 12
+                    ? leftSponsorship.companyName.substring(0, 12) + "…"
+                    : leftSponsorship.companyName}
+                </text>
+                <text
+                  x="137"
+                  y="335"
+                  textAnchor="middle"
+                  fill="#22c55e"
+                  fontSize="9"
+                  fontWeight="bold"
+                >
+                  ✓ RESERVED
+                </text>
+              </>
+            ) : (
+              <>
+                <text
+                  x="137"
+                  y="315"
+                  textAnchor="middle"
+                  fill="white"
+                  fontSize="13"
+                  fontWeight="bold"
+                >
+                  $5,000
+                </text>
+                <text
+                  x="137"
+                  y="335"
+                  textAnchor="middle"
+                  fill="#f97316"
+                  fontSize="9"
+                >
+                  CLICK TO RESERVE
+                </text>
+              </>
+            )}
           </g>
 
           {/* Right leg ad zone */}
           <g
-            className="cursor-pointer hover:opacity-100 transition-opacity"
-            onClick={() => onZoneClick(rightZone)}
+            className={`${rightReserved ? "" : "cursor-pointer"} hover:opacity-100 transition-opacity`}
+            onClick={() => !rightReserved && onZoneClick(rightZone)}
           >
             <rect
               x="220"
@@ -172,19 +219,18 @@ export default function ShortsVisualization({
               width="85"
               height="120"
               rx="8"
-              fill={rightColor.fill}
-              stroke={rightColor.stroke}
+              fill={rightStyles.fill}
+              stroke={rightStyles.stroke}
               strokeWidth="2"
-              strokeDasharray="6,3"
+              strokeDasharray={rightReserved ? "none" : "6,3"}
               filter="url(#glow)"
-              className="animate-pulse"
             />
             {/* Zone label */}
             <text
               x="262"
-              y="280"
+              y="270"
               textAnchor="middle"
-              fill={rightColor.stroke}
+              fill={rightStyles.statusColor}
               fontSize="11"
               fontWeight="bold"
             >
@@ -192,29 +238,63 @@ export default function ShortsVisualization({
             </text>
             <text
               x="262"
-              y="298"
+              y="288"
               textAnchor="middle"
-              fill={rightColor.stroke}
+              fill={rightStyles.statusColor}
               fontSize="11"
               fontWeight="bold"
             >
               RIGHT
             </text>
-            <text
-              x="262"
-              y="320"
-              textAnchor="middle"
-              fill="white"
-              fontSize="10"
-              opacity="0.7"
-            >
-              {rightColor.label}
-            </text>
-            {/* Click indicator */}
-            <circle cx="262" cy="340" r="8" fill={rightColor.stroke} opacity="0.5" />
-            <text x="262" y="344" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
-              +
-            </text>
+
+            {rightReserved && rightSponsorship ? (
+              <>
+                <text
+                  x="262"
+                  y="315"
+                  textAnchor="middle"
+                  fill="white"
+                  fontSize="9"
+                  fontWeight="bold"
+                >
+                  {rightSponsorship.companyName.length > 12
+                    ? rightSponsorship.companyName.substring(0, 12) + "…"
+                    : rightSponsorship.companyName}
+                </text>
+                <text
+                  x="262"
+                  y="335"
+                  textAnchor="middle"
+                  fill="#22c55e"
+                  fontSize="9"
+                  fontWeight="bold"
+                >
+                  ✓ RESERVED
+                </text>
+              </>
+            ) : (
+              <>
+                <text
+                  x="262"
+                  y="315"
+                  textAnchor="middle"
+                  fill="white"
+                  fontSize="13"
+                  fontWeight="bold"
+                >
+                  $5,000
+                </text>
+                <text
+                  x="262"
+                  y="335"
+                  textAnchor="middle"
+                  fill="#f97316"
+                  fontSize="9"
+                >
+                  CLICK TO RESERVE
+                </text>
+              </>
+            )}
           </g>
 
           {/* HYROX branding on waistband */}
@@ -250,14 +330,7 @@ export default function ShortsVisualization({
             <line x1="85" y1="230" x2="105" y2="230" stroke="#9ca3af" strokeWidth="0.5" />
             <line x1="85" y1="350" x2="105" y2="350" stroke="#9ca3af" strokeWidth="0.5" />
             <text x="75" y="295" textAnchor="middle" fill="#9ca3af" fontSize="8" transform="rotate(-90, 75, 295)">
-              12cm
-            </text>
-            
-            <line x1="95" y1="355" x2="180" y2="355" stroke="#9ca3af" strokeWidth="0.5" />
-            <line x1="95" y1="350" x2="95" y2="360" stroke="#9ca3af" strokeWidth="0.5" />
-            <line x1="180" y1="350" x2="180" y2="360" stroke="#9ca3af" strokeWidth="0.5" />
-            <text x="137" y="368" textAnchor="middle" fill="#9ca3af" fontSize="8">
-              8cm
+              bounding box
             </text>
           </g>
         </svg>
@@ -266,15 +339,11 @@ export default function ShortsVisualization({
         <div className="flex justify-center gap-6 mt-6">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-orange-500/30 border border-orange-500" />
-            <span className="text-xs text-gray-400">Open</span>
+            <span className="text-xs text-gray-400">Available ($5,000)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500" />
-            <span className="text-xs text-gray-400">Has Bids</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500/30 border border-red-500" />
-            <span className="text-xs text-gray-400">Hot (3+ bids)</span>
+            <span className="text-xs text-gray-400">Reserved</span>
           </div>
         </div>
       </div>
