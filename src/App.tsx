@@ -3,6 +3,7 @@ import ShortsVisualization from "./components/ShortsVisualization";
 import ReservationModal from "./components/ReservationModal";
 import ZoneStatus from "./components/ZoneStatus";
 import Hero from "./components/Hero";
+import ExposureValue from "./components/ExposureValue";
 import { Sponsorship, AdZone } from "./types";
 
 const PRICE_PER_ZONE = 5000;
@@ -145,6 +146,9 @@ export default function App() {
       )}
 
       <Hero />
+
+      {/* Exposure Value Section */}
+      <ExposureValue />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -328,6 +332,9 @@ export default function App() {
                 <p><span className="text-gray-500">Venue:</span> Anaheim Convention Center</p>
                 <p><span className="text-gray-500">Division:</span> HYROX Doubles Men</p>
                 <p><span className="text-gray-500">Day:</span> Thursday</p>
+                <p><span className="text-gray-500">Pre-Sale Registrants:</span> <span className="text-orange-400 font-bold">16,000+</span></p>
+                <p><span className="text-gray-500">Sell-Out Time:</span> <span className="text-orange-400 font-bold">Less than 4 days</span></p>
+                <p><span className="text-gray-500">Last Year's Attendance:</span> <span className="text-orange-400 font-bold">12,000+</span></p>
               </div>
             </div>
             <div>

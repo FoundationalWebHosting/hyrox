@@ -48,7 +48,7 @@ export default function Hero() {
           </p>
 
           {/* Event Details */}
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-10">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-6">
             {[
               { label: "Date", value: "DEC 3, 2026" },
               { label: "Venue", value: "Anaheim Convention Center" },
@@ -63,6 +63,22 @@ export default function Hero() {
                 <div className="text-white font-bold mt-1">{item.value}</div>
               </div>
             ))}
+          </div>
+
+          {/* Attendance stats highlight */}
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-10">
+            <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <span className="text-orange-400 font-black text-lg">16,000+</span>
+              <span className="text-gray-400 text-xs">Pre-Sale Registrants</span>
+            </div>
+            <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <span className="text-orange-400 font-black text-lg">&lt;4 Days</span>
+              <span className="text-gray-400 text-xs">To Sell Out</span>
+            </div>
+            <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <span className="text-orange-400 font-black text-lg">12,000+</span>
+              <span className="text-gray-400 text-xs">Last Year's Attendance</span>
+            </div>
           </div>
 
           {/* Pricing highlight */}
